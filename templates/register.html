@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %} 회원가입 {% endblock %}
+
+{% block body %}
+<div class="register">
+<div class="col">
+<h1 class="text-danger">Register</h1>
+<hr>
+    <div class="form-group">
+        <label for="InputEmail" class="text-danger">이메일 :</label>
+        <input type="email" class="form-control" id="email" placeholder="여기에 이메일 입력">
+        <small id="emailHelp" class="form-text text-muted">개인정보 보호방침에 의거하여 회원님의 정보를 공유하지 않습니다.</small>
+    </div>
+    <div class="form-group">
+      <label for="InputUsername" class="text-danger">이름 :</label>
+      <input type="text" class="form-control" id="username" placeholder="여기에 이름 입력">
+    </div>
+    <div class="form-group">
+      <label for="InputPassword" class="text-danger">패스워드 :</label>
+      <input type="password" class="form-control" id="password1" placeholder="여기에 패스워드 입력">
+    </div>
+    <div class="form-group">
+      <label for="InputPassword" class="text-danger">패스워드 확인 :</label>
+      <input type="password" class="form-control" id="password2" placeholder="확인차 한번 더 패스워드 입력">
+    </div>
+    <button class="btn btn-danger" id="register">Register</button>
+    <script
+    src="https://code.jquery.com/jquery-3.4.1.min.js"
+    integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+    crossorigin="anonymous"></script>
+</div>
+</div>
+ 
+
+<script>
+  $(document).ready(function () {
+    $('#register').click(function() {
+        $.post('/apis/v1/users/create/', {'email': $('#email').val(), 'username': $('#username').val(), 'password1': $('#password1').val(), 'password2': $('#password2').val()}, function() {
+            alert('가입을 환영합니다!');
+            window.location = "{% url 'login' %}";
+        }).fail(function(data) {
+            alert(data.responseJSON.message);
+        });
+    });
+  });
+</script>
+
+{% endblock %}

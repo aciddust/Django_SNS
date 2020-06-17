@@ -1,0 +1,523 @@
+{% include "header.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dropzone@5.5.1/dist/dropzone.min.css">
+{% endblock %}
+
+{% block body %}
+<script src="https://cdn.jsdelivr.net/npm/dropzone@5.5.1/dist/dropzone.min.js"></script>
+
+<div class='container'>
+  <br>
+  <div class='container'>
+    <div class='row'>
+      <div id="formContainer">
+        <form action="{% url 'apis_v1_content_create' %}" class="dropzone" id="uploader" style="background-color:whitesmoke;">
+          <div class="dz-message" data-dz-message>
+            <span>클릭하여 이미지 추가<br>
+              <i class="fa fa-picture-o" aria-hidden="true"></i>
+            </span>
+          </div>
+          <div class="fallback">
+              <input name="file" type="file" />
+          </div>
+        </form>
+        <hr>
+        <div class="form-group">
+          <textarea class="form-control rounded-10" id="text"
+                    onkeydown='resize(this)'
+                    onkeyup='resize(this)'
+                    placeholder='무슨 생각 하고있어요?'></textarea>
+        </div>
+
+        <div style="text-align">
+          <button type="button" class="btn btn-danger" id="upload" style='width:100%'>작성하기</button>
+        </div>
+        <hr>
+      </div>
+    </div>
+  </div>
+  <br>
+  <div id='contentContainer' class='container'>
+    <div id='content-row' class='row'>
+      <div id='content-user' class="col-sm">
+        {% for content in page_obj %}
+          <div id='content' class="content" style='background:#f4f4f4; border-radius: 6px 6px 6px 6px; padding-bottom:5px; margin-bottom:10px;' data-value='{{ content.id }}'>
+            <h5 class="text-info left-things"><img src= {% if content.user.image %}
+                                                          {{ content.user.image.url }}
+                                                        {% else %}
+                                                          ""
+                                                        {% endif%}
+                                                   alt="profile-image"
+                                                   width="30"
+                                                   height="30"
+                                                   style='border-radius: 50%'>
+              &nbsp;{{ content.user.name }}
+            </h5>
+            {% for image in content.image_set.all %}
+              <div class="post">
+                <div class="text-left user-block" style='padding-top:10px;'>
+                  <img class="img-info img-circle img-bordered-sm" src="{{ image.image.url }}" alt="User Image">
+                </div>
+              </div>
+            {% endfor %}
+            <div class='text-left' style='margin-top:8px;'>
+              <span class="username">
+                <a class="text-info ">{{ content.user.name }}</a>
+                {% if content.user == request.user %}
+                <button class="btn btn-danger btn-remove pull-right" id="delete-content" name='delete-content' data-value='{{content.id}}'>
+                  <i class="fa fa-times" style='color:#dc3545' aria-hidden="true"></i>
+                </button>
+                {% endif %}
+              </span> 
+              <p style='white-space:pre-wrap;' class='margin-content'>{{ content.text }}</p>
+            </div>
+            <div class='row'>
+              <div class='col-sm-12' style=''>
+                {% if request.user in content.likes.all %}
+                  <button style='width:20%; padding:0 0 0 0!important; color:#fa1474' class='btn btn-light btn-content-like fa fa-heart'>
+                    {{ content.likes.count }}
+                  </button> 
+                {% else %}
+                  <button style='width:20%; padding:0 0 0 0!important; color:#fa1474' class='btn btn-light btn-content-like fa fa-heart-o'>
+                    {{ content.likes.count }}
+                  </button>
+                {% endif %}                
+                <button style='width:70%; padding:0 0 0 0!important;' class='btn btn-light btn-content-comment fa fa-comments-o'>
+                </button>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <hr>
+</div>
+
+<script>
+  Dropzone.autoDiscover = false;
+
+  var dropZoneUploader = new Dropzone('form#uploader', {
+    init: function () {
+      var dropzone = this;
+
+      $('#upload').click(function () {
+          dropZoneUploader.processQueue();
+      });
+
+      dropzone.on("sending", function(file, xhr, formData){
+        formData.append("text", $('#text').val());
+      });
+    },
+    parallelUploads: 10,
+    autoProcessQueue: false,
+    type: 'POST',
+    success: function () {
+      location.reload();
+    },
+    error: function(e) {
+      console.log(e)
+      alert('에러가 발생했습니다. 다시 시도해주세요.');
+    },
+    acceptedFiles: ".jpeg,.jpg,.png,.gif",
+    uploadMultiple: true,
+  });
+
+  $(document).ready(function(){
+    /*
+    var myDropZone = Dropzone.forElement(".dropzone");
+    myDropZone.options.autoProcessQueue = false;
+    myDropZone.on("sending", function(file, xhr, data) {
+
+                // First param is the variable name used server side
+                // Second param is the value, you can add what you what
+                // Here I added an input value
+                data.append("your_variable", $('#your_input').val());
+            });
+    */
+
+    $('#logout').click(function () {
+        $.get('/apis/v1/users/logout/', {}, function() {
+          location.reload();
+        });
+    });
+  });
+</script>
+
+
+<script>
+// get variable height of textbox while typing on your feed
+function resize(obj) {
+  obj.style.height = "12px";
+  obj.style.height = (12+obj.scrollHeight)+"px";
+}
+</script>
+
+<script>
+// depend burst handling on short time
+{% if page_obj.has_next %}
+  var sequence = "{{page_obj.next_page_number}}"
+  // var heightOffset = 0;
+  var checkBottom = false;
+  window.onscroll = function(ev) {
+    if (sequence <= {{page_max}}){
+      if ((window.innerHeight + 10 + window.scrollY) >= document.body.offsetHeight
+          && !checkBottom ) {
+          checkBottom = true;
+          // ajax 한번 더 써서 먼저 페이지가 있는지부터 판단하고 success일때 페이지 요청
+          // error일땐 무시하면됨.
+          
+          $.ajax({
+            url:"/",
+            type: "GET",
+            data: { "page" : sequence + '' },
+            datatype: "html",
+            success: (data) => {
+              flag_success = false;
+              try {
+                result = new DOMParser().parseFromString(data, 'text/html').getElementById('content-row');
+                document.getElementById('contentContainer').insertAdjacentHTML('beforeEnd', result.outerHTML);
+                flag_success = true;
+                sequence = (sequence * 1) + 1;
+                sequence += '';
+              } catch {
+                console.log("anybody there?");
+                ; // nothing to do
+              }
+            },
+            error: (request, status, error) => {
+              console.log('hello???');
+              // nothing to do, no page response
+              // console.log('request.status ', request.status)
+            }
+          });
+          window.setTimeout( () => {
+            checkBottom = false;
+          }, 100);
+      };
+    }
+  };
+{% endif %}
+</script>
+
+<script>
+
+ $('body').delegate('.unfollow', 'click', function(e) {
+      var userId = $(e.currentTarget).data('user-id');
+      $.post("{% url 'apis_v1_relation_delete' %}", {id: userId+'', csrfmiddlewaretoken: '{{ csrf_token }}'}, function(){
+        $(e.currentTarget).removeClass('unfollow');
+        $(e.currentTarget).addClass('follow');
+        $(e.currentTarget).removeClass('btn-outline-danger');
+        $(e.currentTarget).addClass('btn-outline-success');
+        $(e.currentTarget).text('팔로우');
+        followees_count -= 1;
+        $('#following-head').text('팔로잉 (' + followees_count + ')')
+      }).fail(function(data) {
+          alert(data.responseJSON.message);
+      });
+    });
+
+
+$('body').delegate('.btn-remove', 'click', function(e) {   
+  var postId = $(e.currentTarget).data('value');
+  $.post("{% url 'apis_v1_content_delete' %}", {postId: postId+'', csrfmiddlewaretoken: '{{ csrf_token }}'}, function() {
+    if (e.target.closest('.btn-remove')) {
+      e.target.closest('.btn-remove').parentNode
+                                     .parentNode
+                                     .parentNode
+                                     .parentNode
+                                     //.parentNode // row 내부 content만 지우고 싶을때 두줄 주석처리
+                                     //.parentNode // 주석해제하면 한 청크씩 지우기
+                                     .removeChild(e.target.parentNode
+                                                          .parentNode
+                                                          .parentNode
+                                      //                    .parentNode // 여기도 마찬가지 한쌍
+                                      //                    .parentNode
+                                                          .parentNode); 
+    }
+  }).fail(function(data) {
+    alert(data.responseJSON.message);
+  });
+});
+</script>
+
+<script>
+$('body').delegate('.btn-content-like', 'click', 
+  (e) => { 
+    heartNode = $(e.currentTarget);
+    post_id = e.target.parentNode.parentNode.parentNode.dataset.value;
+
+    if (post_id === undefined){
+      post_id = $(e.currentTarget).parent().parent().data().value;
+    }
+    if ($(heartNode).hasClass('fa-heart-o')){
+      // like
+      $.post("{% url 'apis_v1_like_create' %}", {user: '{{request.user.id}}',
+                                                 postid: post_id,
+                                                 csrfmiddlewaretoken: '{{ csrf_token }}'},
+        (data) => {
+          $(heartNode).text(' '+data['data']['count']);
+          $(heartNode).removeClass('fa-heart-o');
+          $(heartNode).addClass('fa-heart');  
+        }).fail(function(data) {
+            alert(data.responseJSON.message);
+        }
+      );
+    } else if ($(heartNode).hasClass('fa-heart')) {
+      // dislike
+      $.post("{% url 'apis_v1_like_delete' %}", {user: '{{request.user.id}}',
+                                                 postid: post_id,
+                                                 csrfmiddlewaretoken: '{{ csrf_token }}'},
+        (data) => {
+          $(heartNode).text(' '+data['data']['count']);
+          $(heartNode).removeClass('fa-heart');
+          $(heartNode).addClass('fa-heart-o');
+        }).fail(function(data) {
+            alert(data.responseJSON.message);
+        }
+      );
+    } else {
+      $(heartNode).removeClass('fa-heart-o');
+      $(heartNode).removeClass('fa-heart');
+      alert('잘못된 요청입니다.')
+      // 임의로 채움 // refresh 작업도 나쁘지않을듯
+      $(heartNode).addClass('fa-heart-o');
+    }
+    
+  }
+);
+
+function createComment(comment, data, requestUrl, pageNum, length=0){
+  dataLength = data['results'].length;
+  for (var i=length; i<dataLength; i++){
+    comment_row = document.createElement('div');
+    comment_row.setAttribute('class', 'row');
+    comment_row.setAttribute('style', 'width:100%; padding-left:5%; padding-right:5%;');
+    dom_img = document.createElement('img');
+    
+    imageUrl = data['results'][i]['user']['image'];
+    if(imageUrl == null) {
+      imageUrl = '';
+    }
+    dom_img.src = imageUrl;
+
+    dom_img.setAttribute('width', '30');
+    dom_img.setAttribute('height', '30');
+    dom_img.setAttribute('style', 'border-radius: 50%');
+    profile_node = div_col('4');
+    profile_node.appendChild(dom_img);
+    profile_node.setAttribute('style', 'text-align:left; font-size: 0.7rem;')
+    name_node = document.createTextNode(' '+data['results'][i]['user']['name']);
+    profile_node.appendChild(name_node);
+    comment_row.appendChild(profile_node);
+    comment_node = div_col('8')
+    comment_node.setAttribute('align', 'left');
+    comment_node.setAttribute('style', 'padding-top: 0.5rem; font-size: 0.7rem; vertical-align: 60%;')
+    message_node = document.createTextNode(data['results'][i]['comment']
+                                            + ' - '
+                                            + data['results'][i]['created_at'].replace('T', ' ').slice(2, 19));
+    
+    comment_node.append(message_node);
+    if (requestUrl.indexOf('reverse/') != -1){
+      comment_node.setAttribute('style', 'font-weight:200');
+    }
+    comment_row.appendChild(comment_node);
+    comment.appendChild(comment_row);
+  }
+  refreshButton = document.createElement('button');
+  refreshButton.setAttribute('style', 'width:90%; margin-left:5%; margin-right:5%; margin-top:10px;');
+  refreshButton.setAttribute('class','btn btn-outline-secondary btn-sm fa fa-plus btn-comment-refresh');
+
+  if (requestUrl.indexOf('reverse/') != -1){
+    //console.log('hello? reverse')
+    requestUrl = requestUrl.replace('reverse/', '');
+    pageNum=1;
+    dataLength=0;
+  }
+
+  if(dataLength == 10){
+    //console.log('hello dl 10')
+    pageNum = (pageNum*1)+1;
+    refreshButton.setAttribute('data-next', requestUrl+pageNum)
+    refreshButton.setAttribute('data-remain', 0)
+  } else if(dataLength == 0){
+    //console.log('hello dl 0')
+    refreshButton.setAttribute('data-next', requestUrl+pageNum)
+    refreshButton.setAttribute('data-remain', 0)
+  } else {
+    //console.log('hello dl where', dataLength)
+    refreshButton.setAttribute('data-next', requestUrl+pageNum)
+    refreshButton.setAttribute('data-remain', dataLength)
+  }  
+  comment.appendChild(refreshButton);
+  return comment;
+}
+
+function div_col(size, data) {
+  temp = document.createElement('div');
+  temp.setAttribute('class', 'col-sm-'+size);
+  temp.textContent = data;
+  return temp;
+}
+
+$('body').delegate('.btn-content-comment', 'click',
+  (e) => {
+    commentNode = $(e.currentTarget);
+    contentNode = e.target.parentNode.parentNode.parentNode;
+    if ($(commentNode).hasClass('fa-comments-o')){
+      // open comment
+      $(commentNode).removeClass('fa-comments-o');
+      $(commentNode).addClass('fa-commenting');
+
+      // comment init
+      comment = document.createElement('div');
+      comment.setAttribute('id', 'comment-box')
+    
+      // 구분선
+      comment.appendChild(document.createElement('hr'))
+
+      // 여기에 댓글 입력란 넣어주세요.
+      replyBox = document.createElement('div');
+      replyBox.setAttribute('id', 'reply-box');
+      replyBox.setAttribute('class', 'form-group form-inline');
+      replyColFirst = document.createElement('div');
+      //replyColFirst.setAttribute('class', '');
+      replyColFirst.setAttribute('style', 'width:80%; padding-left:5%;');
+      replyColSecond = document.createElement('div');
+      //replyColSecond.setAttribute('class', '');
+      replyColSecond.setAttribute('style', 'width:20%; padding-right:5%;');
+      reply = document.createElement('input');
+      reply.type = 'text';
+      reply.setAttribute('style', 'width:95%;')
+      reply.setAttribute('class', 'form-control form-control-sm');
+      reply.setAttribute('placeholder', '여기에 댓글 입력');
+      replySubmit = document.createElement('button');
+      replySubmit.setAttribute('style', 'width:100%;');
+      replySubmit.setAttribute('class','btn btn-primary btn-sm fa fa-location-arrow btn-comment-submit');
+      //submitIcon = document.createElement('i');
+      //submitIcon.setAttribute('class', 'fa fa-location-arrow');
+      //submitIcon.setAttribute('aria-hidden', 'true');
+      //replySubmit.appendChild(submitIcon);
+      replyColFirst.append(reply);
+      replyColSecond.append(replySubmit);
+      replyBox.append(replyColFirst);
+      replyBox.append(replyColSecond);
+      //replyBox.append(reply);
+      //replyBox.append(replySubmit);
+      comment.appendChild(replyBox);
+      
+      // 구분선
+      comment.appendChild(document.createElement('hr'))
+      
+      var contentId = $(contentNode).data('value');
+      
+      var commentPageNum = 1;
+      commentRequestUrl = "/apis/v2/comments/reverse/get/post="+contentId+"/?page=";
+
+      $.get(commentRequestUrl+commentPageNum+"",
+        (data) => {
+          if (data['results'].length < 1){
+            now = new Date()
+            contentNode.append(createComment(comment, {
+              'results' : []
+              /*
+              'results' : [
+                {'id': 0,
+                 'comment': '아직 댓글이 없는 게시물입니다',
+                 'created_at': (now.getFullYear())+'-'
+                                +(now.getMonth()+1)+'-'
+                                +(now.getDate())+' '
+                                +(now.getHours())+':'
+                                +(now.getMinutes())+':'
+                                +(now.getSeconds()),
+                 'user': {
+                   'id' : 0,
+                   'name' : '댓글냥이',
+                   'image' : 'http://localhost:8080/media/misc/basic.png',
+                 },
+                },
+              ]*/
+            }, commentRequestUrl, pageNum=1, remain=0))
+          } else { 
+            //console.log('test >>> ' , commentRequestUrl, commentPageNum, data['results'].length)
+            if(data['results'].length == 10){
+              commentPageNum+=1;
+              contentNode.append(createComment(comment, data, commentRequestUrl, commentPageNum, 0 ));    
+            } else {
+              contentNode.append(createComment(comment, data, commentRequestUrl, commentPageNum, 0 ));    
+            }  
+            /*
+            else {
+              contentNode.append(createComment(comment, data, commentRequestUrl, commentPageNum, data['results'].length -1 ));    
+            }*/
+          }
+        }
+      );
+
+    } else if ($(commentNode).hasClass('fa-commenting')) { //close comment
+      $(commentNode).removeClass('fa-commenting');
+      $(commentNode).addClass('fa-comments-o');
+      targetNode = e.target.parentNode.parentNode.parentNode;
+      targetNode.querySelector('#comment-box').remove();
+    } else { // reset (init)
+      $(commentNode).removeClass('fa-commenting');
+      $(commentNode).removeClass('fa-comments-o');
+      $(commentNode).addClass('fa-comments-o');
+    }
+
+    
+    // get json data (comment on this post)
+  }
+);
+
+$('body').delegate('.btn-comment-refresh', 'click',
+  (e) => {
+    requestUrl = e.target.getAttribute('data-next');
+    remain = e.target.getAttribute('data-remain');
+    trimParams = requestUrl.replace(/(\s*\/)/g," ").replace(/(\s*\?)/g," ").replace(/(\s*\&)/g," ").trim().split(' ')
+    $.get(requestUrl,
+        (data) => {
+          // console.log('data length >> ', data) // 댓글 업데이트가 없을 경우 조회해도 undefined 나올거임
+          var paramDict = {}
+          for (var i in trimParams){
+            if (trimParams[i].indexOf('=')){
+              params = trimParams[i].split('=');
+              paramDict[params[0]]=params[1];
+            }
+          }
+          createComment(e.target.parentNode,
+                        data,
+                        "/apis/v2/comments/get/post="+paramDict['post']+"/?page=",
+                        paramDict['page'],
+                        length=remain
+                        )
+          e.target.remove();
+        }
+    );
+  }
+)
+
+
+$('body').delegate('.btn-comment-submit', 'click', 
+  (e) => {
+    replyBox = e.target.parentNode.parentNode.childNodes[0].childNodes[0];   
+    contentId = e.target.parentNode.parentNode.parentNode.parentNode.getAttribute('data-value');
+    replyFold = e.target.parentNode.parentNode.parentNode.parentNode.childNodes[7].childNodes[1].childNodes[3];
+    //console.log(replyFold);
+    $.post("{% url 'apis_v1_comment_post' %}", {comment: replyBox.value+'',
+                                                postid: contentId+'',
+                                                csrfmiddlewaretoken: '{{ csrf_token }}'},
+      () => {
+        replyFold.click();
+        replyFold.click();
+      }).fail(function(data) {
+          alert(data.responseJSON.message);
+      }
+    );
+  }
+); 
+
+</script>
+
+{% endblock %}

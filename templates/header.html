@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %} 고독사한 미식가 {% endblock %}
+{% block body %}
+<nav class="fast-nav navbar navbar-expand-lg navbar-light bg-white">
+  <a class="navbar-brand text-danger col-sm-3" href="{% url 'contents_home' %}"><b>고독사한 미식가</b></a>
+  <div class="collapse navbar-collapse col-sm-9" id="navbarText" style="display: inline-block !important; text-align: right;">
+    <span class='navbar-text row'>
+
+      <span class="col-sm">
+        <a href='/mypage'><img id='mypage' src= {% if request.user.image %}
+                                                  {{ request.user.image.url }} 
+                                                {% else %}
+                                                  ""
+                                                {% endif %}
+           alt="" width="30" height="30" style='border-radius: 50%;'></a>
+        {% comment %} {{ request.user }} {% endcomment %}
+      </span>
+      <span class="col-sm">
+        <a href="{% url 'contents_relation' %}">
+          <i class="fa fa-users"></i>
+        </a>
+      </span>
+      <span class="col-sm">
+        <a href="javascript:void(0);" id="logout">
+          <i class="fa fa-sign-out"></i>
+        </a>
+      </span>
+    </span>
+  </div>
+</nav>
+
+{% endblock %}

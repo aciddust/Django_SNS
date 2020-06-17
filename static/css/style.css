@@ -1,0 +1,139 @@
+body {
+    background-color: #fafafa !important;
+}
+.content {
+    text-align: center;
+}
+.content .post {
+    border: none;
+    /* border-radius: 10px 10px 10px 10px; */
+    display: inline-block;
+    background-color: #f4f4f4;
+}
+.content .left-things {
+    text-align: left;
+}
+.content .post .img-info {
+    width:100%;
+    max-width: 600px;
+    height : auto;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+#fast-nav {
+    border-bottom: 1px solid #e6e6e6;
+    padding: 0.5rem 20rem;
+}
+
+#formContainer {
+    width:100%;
+    max-width:600px;
+    margin: 0 auto;
+}
+
+#contentContainer {
+    width:100%;
+    max-width:600px;
+    margin: 0 auto;
+}
+
+.dropzone {
+    border-radius: 10px 10px 10px 10px;
+}
+
+#searchUserName {
+    width:100%;
+    /* max-width:600px; */
+    border-radius: 3px 3px 3px 3px;
+    margin-bottom: 5px;
+}
+
+.text-info {
+    margin-left: 10px;
+}
+
+.margin-content{
+    margin-top: 5px;
+    margin-left: 10px;
+}
+
+.btn-remove{
+    background-color: transparent !important;
+    background-image: none !important;
+    border-color: transparent !important;
+    border: none !important;
+    color: #f4f4f4;  
+}
+
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 0 4px;
+  }
+  
+/* Create four equal columns that sits next to each other */
+.column {
+flex: 33%;
+max-width: 100%;
+padding: 0 4px;
+}
+
+.column img {
+margin-top: 8px;
+vertical-align: middle;
+width: 100%;
+}
+
+/* Responsive layout - makes a two column-layout instead of four columns */
+@media screen and (max-width: 800px) {
+    .column {
+        flex: 33%;
+        max-width: 100%;
+    }
+}
+
+/* Responsive layout - makes the two columns stack on top of each other instead of next to each other */
+@media screen and (max-width: 600px) {
+    .column {
+        flex: 20%;
+        max-width: 100%;
+    }
+}
+
+
+.alert{
+    margin-bottom: 0.5rem !important;
+    margin-top: 0.5rem !important;
+}
+
+.color-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.color-warning {
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+}
+
+.color-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+}
+
+.color-light {
+    background-color: #fefefe;
+    border-color: #fdfdfe;
+}
+
+.color-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.color-mint {
+    background-color: #52ebd9;
+    border-color: #349e99;
+}

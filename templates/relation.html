@@ -1,0 +1,331 @@
+
+{% include "header.html" %}
+{% block head %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dropzone@5.5.1/dist/dropzone.min.css">
+{% endblock %}
+
+<div id='alert-space' style='width:100%; z-index: 3; position: fixed!important;'>
+</div>
+
+{% block body %}
+<div class="container" style="margin-top:30px;">
+  <div>
+    <h4> 사용자 찾기 </h4><i id='find-user-area' class="fa fa-minus" aria-hidden="true"></i>
+  </div>
+  <input type="text" id="searchUserName" placeholder="유저이름을 입력해주세요.">
+  <button id="search" class="btn btn-outline-primary btn-sm" style='width:100%;'>검색</button>
+  
+  <hr>
+  <div id="searchResult"></div>
+  <hr>
+
+  <div class='row'>
+    <div class='col-sm-6' style='padding-top:10px;'>
+      <div>
+        <h4 id='following-head'>팔로잉 ({{followees_count}})</h4><i id='following-area' class="fa fa-minus" aria-hidden="true"></i>
+      </div>
+      {% if followees %}
+      <ul id='following-list' class="list-group">
+      {% for user in followees %}
+        <li class="list-group-item col-md-6" style="min-width: 100%">
+          <img src="{% if user.image %}{{user.image.url}}{% else %}{% endif %}"
+               style="border-radius:50%; width:auto; height:auto; max-width:30px; max-height:30px; !important;" alt="profile-image">
+          &nbsp; {{ user.name }} #{{user.id}} 
+          <button style='' class="unfollow btn btn-outline-danger btn-sm pull-right" data-user-name="{{ user.name }}" data-user-id="{{ user.id }}">언팔로우</button>
+        </li>
+      {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    <div class='col-sm-6' style='padding-top:10px;'>
+      <div>
+        <h4 id='follower-head'>팔로워 ({{followers_count}})</h4> <i id='followers-area' class="fa fa-minus" aria-hidden="true"></i>
+      </div>
+      {% if followers  %}
+      <ul id='followers-list' class="list-group">
+        {% for obj in followers %}
+          <li class="list-group-item col-md-6" style="min-width: 100%">
+            <img src="{% if obj.follower.image %}{{obj.follower.image.url}}{% else %}{% endif %}" style="border-radius:50%; width:auto; height:auto; max-width:30px; max-height:30px; !important;" alt="profile-image">&nbsp; {{ obj.follower.name }} #{{obj.follower.id}} {% if obj.follower.id not in followees_ids %}<button class="follow btn btn-outline-success btn-sm pull-right" data-user-name="{{ obj.follower.name }}" data-user-id="{{ obj.follower.id }}" >팔로우</button>{% else %}&nbsp;<i style="align:right;" class="fa fa-heart" aria-hidden="true"></i>{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+
+<script>
+
+  {% if followees_ids %}
+    var followeesIds = {{ followees_ids }};
+  {% else %}
+    var followeesIds = [];
+  {% endif %}
+
+  function addAlert(message, alertType){
+    var myAlert = document.createElement('div');
+    myAlert.style.cssText = 'text-align:center;'
+    myAlert.setAttribute('class', 'alert alert-'+alertType);
+    myAlert.setAttribute('role', 'alert');
+
+    var textnode = document.createElement('span');
+    var boldnode = document.createElement('strong');
+    boldnode.textContent = message;
+    textnode.appendChild(boldnode);
+    
+    myAlert.appendChild(textnode);
+
+    /*
+    var iconnode = document.createElement('i');
+    iconnode.style.cssText = 'float:right;';
+    iconnode.setAttribute('class', 'fa fa-minus');
+    iconnode.setAttribute('aria-hidden','true');
+
+    alert.appendChild(iconnode);  
+    */
+
+    var alertSpace = document.getElementById('alert-space')
+    alertSpace.appendChild(myAlert);
+    //$(alertSpace.lastChild).fadeIn();
+    
+    setTimeout( () => {
+      setTimeout( () => { 
+        alertSpace.children[0].remove();  
+        //console.log('그 다음 여기가 실행됨')
+      }, 1000)
+      $(alertSpace.children[0]).fadeOut()  
+      //console.log('여기가 먼저 실행됨.')
+    }, 2000);
+    
+  }
+
+  function checkFollowing(targetId, followList, flag){
+    targetId = targetId + 0;
+    if (followList.indexOf(targetId) > -1){
+      if (flag == 1) return ' unfollow btn-outline-danger ';
+      else if(flag == 2) return '언팔로우';
+      else return '잘못된 요청입니다.';
+    } else {
+      if (flag == 1) return ' follow btn-outline-success ';
+      else if(flag == 2) return '팔로우';
+      else return '잘못된 요청입니다.';
+    }
+  }
+
+  $(document).ready(function(){
+
+    var followees_count = {% if followees_count %}{{ followees_count }}{% else %}0{% endif %}; // type(int)
+    var followers_count = {% if followers_count %}{{ followers_count }}{% else %}0{% endif %}; // type(int)
+
+    var lastword = '';
+    $('#logout').click(function () {
+        $.get('/apis/v1/users/logout/', {}, function() {
+          location.reload();
+        });
+    });
+
+    
+
+    $('#search').click(function () {
+
+      document.getElementById('searchResult').innerHTML = '';
+      {% comment %} {% url 'apis_v2_user_get' %} {% endcomment %}
+      $.get("/apis/v2/users/get/name="+$('#searchUserName').val(), function(obj) {
+          userinfo = obj['results'];
+          for (var u in userinfo){
+            image_url = '';
+            if (!userinfo[u]['image']) {
+              image_url = ''
+            } else {
+              image_url = userinfo[u]['image']
+            }
+            $('#searchResult').append('<div class="row">'
+                                        +'<div class="col-sm-4" style="padding-right:0px !important;">'
+                                          +'<img src='+image_url+' style="border-radius:50%; width:auto; height:auto; max-width:30px; max-height:30px; !important;" alt="profile-image">'
+                                          + '&nbsp;'
+                                          +'<strong>'
+                                            +userinfo[u]["name"]
+                                          +'</strong>'
+                                          + '&nbsp;'
+                                          + '#'+userinfo[u]['id']
+                                        +'</div>'
+                                        + '<div class="col-sm-5" style="vertical-align: baseline;">'
+                                          + '<div style="font-size: 0.8rem;">' + userinfo[u]['message'] + '</div>'
+                                        +'</div>' 
+                                        +'<div class="col-sm-3">'
+                                          +'<button data-user-name="'+userinfo[u]['name']+'"  data-user-id="'+userinfo[u]['id']+'" name="follow-btn" class="btn btn-sm pull-right'
+                                          + checkFollowing(userinfo[u]['id'], followeesIds, 1)
+                                          + '">'
+                                          + checkFollowing(userinfo[u]['id'], followeesIds, 2)
+                                          + '</button>'
+                                        +'</div>'
+                                      +'</div>');
+          };
+          $('#searchResult').append('<div class="row" id="get-more-space">'
+                                      + '<div class="col-sm-12">'
+                                        + '<button onclick="getMoreUser(\''+ obj["next"] +'\')" id="get-more-user" class="btn btn-outline-success btn-sm" style="margin-top: 10px; width:100%;">+</button>'
+                                      + '</div>'
+                                    +'</div>');
+          
+          $('#find-user-area').removeClass('fa-plus');
+          $('#find-user-area').addClass('fa-minus');
+          $('#searchResult').show();
+
+      }).fail(function(data){
+          $('#searchResult').html(data.responseJSON.message);
+      });
+    });
+
+    $('body').delegate('.follow', 'click', function(e) {
+      var userId = $(e.currentTarget).data('user-id');
+      var userName = $(e.currentTarget).data('user-name');
+      $.post("{% url 'apis_v1_relation_create' %}", {id: userId+''}, function(){
+        // classList.add / classList.remove
+        $(e.currentTarget).removeClass('follow');
+        $(e.currentTarget).addClass('unfollow');
+        $(e.currentTarget).removeClass('btn-outline-success');
+        $(e.currentTarget).addClass('btn-outline-danger');
+        $(e.currentTarget).text('언팔로우');
+        
+        followees_count += 1;
+        $('#following-head').text('팔로잉 (' + followees_count + ')')
+        addAlert(userName+'님을 팔로우합니다','success');
+
+      }).fail(function(data) {
+          addAlert(data.responseJSON.message, 'warning');
+      });
+    });
+
+    $('body').delegate('.unfollow', 'click', function(e) {
+      var userId = $(e.currentTarget).data('user-id');
+      var userName = $(e.currentTarget).data('user-name');
+      $.post("{% url 'apis_v1_relation_delete' %}", {id: userId+''}, function(){
+        $(e.currentTarget).removeClass('unfollow');
+        $(e.currentTarget).addClass('follow');
+        $(e.currentTarget).removeClass('btn-outline-danger');
+        $(e.currentTarget).addClass('btn-outline-success');
+        $(e.currentTarget).text('팔로우');
+        followees_count -= 1;
+        $('#following-head').text('팔로잉 (' + followees_count + ')')
+        addAlert(userName+'님을 언팔로우합니다','danger');
+      }).fail(function(data) {
+          addAlert(data.responseJSON.message, 'warning');
+      });
+    });
+  });
+</script>
+
+<script>
+  function getMoreUser (nextUrl) {
+    document.getElementById('get-more-space').remove();
+    $.get(nextUrl, function(obj) {
+      userinfo = obj['results'];
+      for (var u in userinfo) {
+        image_url = '';
+        if (!userinfo[u]['image']) {
+          image_url = ''
+        } else {
+          image_url = userinfo[u]['image']
+        }
+        $('#searchResult').append('<div class="row">'
+                                  + '<div class="col-sm-4" style="padding-right:0px !important;">'
+                                    + '<img src='+image_url+' style="border-radius:50%; width:auto; height:auto; max-width:30px; max-height:30px; !important;" alt="profile-image">'
+                                    + '&nbsp;'
+                                    + '<strong>'
+                                      + userinfo[u]["name"]
+                                    + '</strong>'
+                                    + '&nbsp;'
+                                    + '#'+userinfo[u]['id']
+                                  + '</div>'
+                                  + '<div class="col-sm-5" style="vertical-align: baseline;">'
+                                    + '<div style="font-size: 0.8rem;">' + userinfo[u]['message'] + '</div>'
+                                  + '</div>' 
+                                  + '<div class="col-sm-3">'
+                                    +'<button data-user-id="'+userinfo[u]['id']+'" name="follow-btn" class="btn btn-sm pull-right'
+                                    + checkFollowing(userinfo[u]['id'], followeesIds, 1)
+                                    + '">'
+                                    + checkFollowing(userinfo[u]['id'], followeesIds, 2)
+                                    + '</button>'
+                                  + '</div>'
+                                + '</div>');
+      };
+      $('#searchResult').append('<div class="row" id="get-more-space">'
+                                + '<div class="col-sm-12">'
+                                  + '<button onclick="getMoreUser(\''+obj["next"]+'\')" id="get-more-user" class="btn btn-outline-success btn-sm" style="margin-top: 10px; width:100%;">+</button>'
+                                + '</div>'
+                              + '</div>');
+    }).fail(function(data){
+      result_message =  '님을 더 이상 찾을 수 없습니다.'
+      if($('#searchUserName').val() == ''){
+        result_message = '모든 사용자를 찾았습니다.'
+      }
+
+      $('#searchResult').append('<div class="row" id="get-more-space">'
+                                + '<div class="col-sm-12" style="margin-top:10px; text-align:center;">'
+                                  + '<strong>'+ $('#searchUserName').val() + '</strong>' + result_message
+                                + '</div>'
+                              + '</div>');
+    });
+  };
+</script>
+
+<script>
+  // 0: user-find-area
+  // 1: following
+  // 2: followers
+  var hide_and_seek = [true, true, true];
+
+  function switchIcon(obj, flag){
+    if(flag){
+      obj.removeClass('fa-minus');
+      obj.addClass('fa-plus');
+    } else {
+      obj.removeClass('fa-plus');
+      obj.addClass('fa-minus');
+    }
+  }
+
+  $('#find-user-area').click( () => {
+    if (hide_and_seek[0]){
+      $('#searchResult').hide();
+      switchIcon($('#find-user-area'), hide_and_seek[0]);
+      hide_and_seek[0] = false;
+    } 
+    else {
+      $('#searchResult').show();
+      switchIcon($('#find-user-area'), hide_and_seek[0]);
+      hide_and_seek[0] = true;
+    } 
+  })
+
+  $('#following-area').click( () => {
+    if (hide_and_seek[1]) {
+      $('#following-list').hide();
+      switchIcon($('#following-area'), hide_and_seek[1]);
+      hide_and_seek[1] = false;
+    }
+    else {
+      $('#following-list').show();
+      switchIcon($('#following-area'), hide_and_seek[1]);
+      hide_and_seek[1] = true;
+    } 
+  })
+
+  $('#followers-area').click( () => {
+    if (hide_and_seek[2]) {
+      $('#followers-list').hide();
+      switchIcon($('#followers-area'), hide_and_seek[2]);
+      hide_and_seek[2] = false;
+    }
+    else {
+      $('#followers-list').show();
+      switchIcon($('#followers-area'), hide_and_seek[2]);
+      hide_and_seek[2] = true;
+    } 
+  })
+
+
+</script>
+
+{% endblock %}

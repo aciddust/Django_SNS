@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %} 안녕하세요 {% endblock %}
+
+{% block body %}
+<div id="login">
+  <div id='login-container' class="container">
+  <br>
+  <h3 class="text-center text-danger">Login</h3><br>
+    <div class='row'>
+      <div class="form-group col-sm">
+        <label for="username" class="text-danger">ID:</label><br>
+        <input type="text" placeholder="E-Mail 형식의 ID를 입력해주세요" name="username" id="username" class="form-control">
+      </div>
+    </div>
+    <div class='row'>
+      <div class="form-group col-sm">
+        <label for="password" class="text-danger">Password:</label><br>
+        <input type="password" placeholder="패스워드를 입력해주세요" name="password" id="password" class="form-control">
+      </div>
+    </div>
+    <div class='row'>
+      <div class="form-group col-sm">
+        <div class="row">
+          <input type="submit" id="loginButton" class="form-control btn btn-danger" value="로그인">
+        </div>
+      </div>
+    </div>
+    <div class='row'>
+      <div class="form-group col-sm">
+          <div class="row">
+            <a href="{% url 'register' %}" class="form-control btn btn-outline-danger">회원가입</a>
+          </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+ <script
+  src="https://code.jquery.com/jquery-3.4.1.min.js"
+  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+  crossorigin="anonymous"></script>
+
+ <script>
+  $(document).ready(function () {
+  $('#loginButton').click(function() {
+      $.post('/apis/v1/users/login/', {'username': $('#username').val(), 'password': $('#password').val()}, function() {
+         window.location = '/';
+      }).fail(function(data) {
+          alert(data.responseJSON.message);
+      });
+  });
+  });
+</script>
+
+<script>
+  var containerOffset = document.getElementById('login-container').offsetHeight / 2;
+  var heightOffset = window.innerHeight / 2;
+  var sideOffset = 20;
+  containerOffset = heightOffset - containerOffset - sideOffset;
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function slideAnimate(){
+    for (var offset=0; offset<(containerOffset+0); offset+=5){
+      document.getElementById('login-container').style.marginTop = offset+'px';
+      console.log('hello');
+      await sleep(1);
+    }
+  } // no call back.
+
+  $(document).ready( () => {
+    //slideAnimate();
+    document.getElementById('login-container').style.marginTop = containerOffset+'px';
+    document.getElementById('login-container').style.paddingLeft = '20%';
+    document.getElementById('login-container').style.paddingRight = '20%';
+  });
+</script>
+
+{% endblock %}

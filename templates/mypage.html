@@ -1,0 +1,190 @@
+{% comment %} {% extends "base.html" %} {% endcomment %}
+{% include "header.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dropzone@5.5.1/dist/dropzone.min.css">
+{% endblock %}
+
+{% block body %}
+
+
+<script src="https://cdn.jsdelivr.net/npm/dropzone@5.5.1/dist/dropzone.min.js"></script>
+
+<!-- start -->
+
+<div class='container'>
+  <br>
+  <div class='container'>
+    <div class='row'>
+      <div class='col-sm-2' id="formContainer" onmouseover="showGuide(true)" onmouseleave="showGuide(false)">
+        <form action="{% url 'apis_v1_account_image_update' %}"
+              class="dropzone"
+              id="uploader"
+              style="background: url('{% if not user_info.3 %} {% else %}{{user_info.3.url}}{% endif%}');
+                    background-repeat: no-repeat;
+                    
+                    background-size:100%;
+                    max-width:100%;
+                    width:200px;
+                    padding:0px 0px 0px 0px !important;" >
+          <div id='image-guide' style='visibility:hidden; text-align:center; background-color:rgba(0,0,0,0.1); height:100%; line-height:50px; min-height:150px; margin:0px 0px 0px 0px !important;' class="dz-message semi-transparent" data-dz-message>
+            <span>
+              <i class="fa fa-refresh" aria-hidden="true"></i>
+              &nbsp;
+              <i class="fa fa-picture-o" aria-hidden="true"></i>
+            </span>
+          </div>
+          <div class="fallback">
+              <input name="file" type="file" />
+          </div>
+        </form>
+      </div>
+      <div class='col-sm' id='forminfo'>
+        <div>
+          {% comment %} 이름/이메일/디데이 {% endcomment %}
+          <p><h3>{{ user_info.0 }}</h3></p>
+          <p>{{ user_info.1 }}</p>
+          <p>D + {{ user_info.2 }}</p>
+          <p style='word-break:break-all;' id='user_message'>{% if user_info.4 == '' %} <i style='color:#8c9dba'>오늘은 무슨 생각 하고계세요?</i> {% else %} <strong> {{ user_info.4 }} </strong> {% endif %}</p>
+          <input id='user_message_input'
+                 data-uid='{{user.id}}'
+                 style='visibility:hidden;'
+                 class="form-control form-control-sm"
+                 type="text"
+                 placeholder="입력 후 바깥부분을 클릭하면 저장됩니다."
+                 maxlength='255'
+                 onkeyup='checkEnter(this)'
+                 onfocusout='messageCommit(this)'>
+        </div>
+      </div>
+      <hr>
+    </div>
+  </div>
+  <div id='contentContainer' class='container'>
+    <div id='content-row' class='row'>
+      {% for content in page_obj %}
+        {% for image in content.image_set.all %}
+          <div id='image-thumb' class="column">
+            <form method='POST' action="/apis/v1/contents/delete/" style='margin-top:8px;'>
+              {% csrf_token %}
+                <img style='width:100%' src="{{ image.image.url }}" alt="User Image">
+            </form>
+          </div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+  <hr>
+</div>
+
+<!-- end -->
+
+<script>
+  Dropzone.autoDiscover = false;
+
+  var dropZoneUploader = new Dropzone('form#uploader', {
+    init: function () {
+      var dropzone = this;
+
+      $('#upload').click(function () {
+          dropZoneUploader.processQueue();
+      });
+
+      dropzone.on("sending", function(file, xhr, formData){
+        formData.append("text", $('#text').val());
+      });
+    },
+    parallelUploads: 1,
+    autoProcessQueue: true,
+    type: 'POST',
+    success: function () {
+      location.reload();
+    },
+    error: function(e) {
+      console.log(e)
+      alert('에러가 발생했습니다. 다시 시도해주세요.');
+    },
+    acceptedFiles: ".jpeg,.jpg,.png,.gif",
+    uploadMultiple: true,
+  });
+
+  $(document).ready(function(){
+    var w = document.getElementById('uploader').offsetWidth;
+    document.getElementById('uploader').style.height = w+'px';
+    document.getElementById('uploader').style.minHeight = w+'px';
+    /*
+    var myDropZone = Dropzone.forElement(".dropzone");
+    myDropZone.options.autoProcessQueue = false;
+    myDropZone.on("sending", function(file, xhr, data) {
+
+                // First param is the variable name used server side
+                // Second param is the value, you can add what you what
+                // Here I added an input value
+                data.append("your_variable", $('#your_input').val());
+            });
+    */
+    $('#logout').click(function () {
+        $.get('/apis/v1/users/logout/', {}, function() {
+          location.reload();
+        });
+    });
+
+      
+  });
+</script>
+
+<script>
+  function showGuide(flag) {
+    image_guide = document.getElementById('image-guide');
+    if(flag){
+      image_guide.style.visibility = 'visible';
+    } else {
+      image_guide.style.visibility = 'hidden';
+    }
+  };
+</script>
+
+<script>
+  function profileImageResize(){
+    var w = document.getElementById('uploader').offsetWidth;
+    document.getElementById('uploader').style.height = w+'px';
+    document.getElementById('uploader').style.minHeight = w+'px';
+    console.log('hello');
+  }
+
+  window.addEventListener('resize', profileImageResize)
+</script>
+
+<script>
+  $('#user_message').click( function (e) {
+    document.getElementById('user_message').style.display = 'none';
+    document.getElementById('user_message_input').value = document.getElementById('user_message').textContent.trim();
+    document.getElementById('user_message_input').style.visibility = 'visible';
+  })
+
+  function checkEnter(e){
+    if (window.event.keyCode == 13) {
+      messageCommit(e);
+    }
+  }
+
+  function messageCommit(e){
+    var userId = $('#user_message_input').data('uid');
+    var message = document.getElementById('user_message_input').value;
+    $.post("{% url 'apis_v1_account_profile_update' %}", {id: userId+'', message: message+''}, function(){
+      // 여기서 프로필 업데이트 로직 해야함.
+      document.getElementById('user_message').style.display = 'block';
+      document.getElementById('user_message_input').style.visibility = 'hidden';
+      if (message == ''){
+        message = '메시지를 입력해주세요.'
+      }
+      document.getElementById('user_message').textContent = message;
+      document.getElementById('user_message').style.fontWeight = 'bold';
+      
+    }).fail(function(data) {
+        alert(data.responseJSON.message);
+    });
+  };
+</script>
+
+{% endblock %}
